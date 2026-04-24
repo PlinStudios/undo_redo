@@ -30,6 +30,12 @@ int main() {
   im.draw("imagen_7rot.png");
   im.undo();
   im.draw("imagen_8rotaback.png");
+  im.repeat();
+  im.repeat();
+  im.repeat_all();
+  im.repeat();
+  im.draw("imagen_9rep.png");
+  im.repeat_all();
 
   /* NOTA 1: Si usan el mismo nombre para las imágenes, entonces cada llamada al
   método draw() sobreescribirá a la imagen */

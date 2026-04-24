@@ -4,6 +4,8 @@
 #include "basics.h"
 
 #include <stack>
+#include <queue>
+#include <string>
 #define ACTION_LEFT 'l'
 #define ACTION_RIGHT 'r'
 #define ACTION_UP 'u'
@@ -23,10 +25,16 @@ private:
   std::stack<std::pair<char,int>> st_undo;
   std::stack<std::pair<char,int>> st_redo;
 
+  std::queue<std::pair<char,int>> history;
+
   void registerAction(char type, int d){
     st_undo.push({type,d});
     if (!st_redo.empty())
       st_redo = std::stack<std::pair<char,int>>();
+  }
+
+  void addHistory(char type, int d){
+    history.push({type,d});
   }
 
 public:
@@ -89,7 +97,10 @@ public:
     if (st_undo.empty()) return;
     std::pair<char,int> act = st_undo.top(); st_undo.pop();
 
-    execCounter(act.first,act.second);
+    char revact = ActionCounter(act.first);
+
+    execAction(revact,act.second);
+    addHistory(revact,act.second);
 
     st_redo.push(act);
   }
@@ -99,29 +110,64 @@ public:
     std::pair<char,int> act = st_redo.top(); st_redo.pop();
 
     execAction(act.first,act.second);
+    addHistory(act.first,act.second);
 
     st_undo.push(act);
   }
 
+  void repeat(){
+    if (st_undo.empty()) return;
+    std::pair<char,int> act = st_undo.top();
+
+    registerAction(act.first,act.second);
+    addHistory(act.first,act.second);
+    execAction(act.first,act.second);
+
+    st_undo.push(act);
+  }
+
+  void repeat_all(){
+    moving_image clon;
+
+    size_t n = history.size();
+
+    for (int i=0; i<n; i++)
+    {
+      std::pair<char,int> act = history.front(); history.pop();
+
+      clon.execAction(act.first, act.second);
+      clon.draw((std::string("history")+std::to_string(i)+".png").c_str());
+
+      history.push(act);
+    }
+    
+    //clon.~moving_image();
+  }
+
   void move_left(int d){
     registerAction(ACTION_LEFT,d);
+    addHistory(ACTION_LEFT,d);
     do_move_left(d);
   }
   void move_right(int d){
     registerAction(ACTION_RIGHT,d);
+    addHistory(ACTION_RIGHT,d);
     do_move_right(d);
   }
   void move_up(int d){
     registerAction(ACTION_UP,d);
+    addHistory(ACTION_UP,d);
     do_move_up(d);
   }
   void move_down(int d){
     registerAction(ACTION_DOWN,d);
+    addHistory(ACTION_DOWN,d);
     do_move_down(d);
   }
 
   void rotate(){
     registerAction(ACTION_ROTATE,0);
+    addHistory(ACTION_ROTATE,0);
     do_rotate();
   }
 
@@ -156,31 +202,25 @@ public:
     }
   }
 
-  void execCounter(char type, int d){
+  char ActionCounter(char type){
     switch (type)
     {
     case ACTION_LEFT:
-      do_move_right(d);
-      break;
+      return ACTION_RIGHT;
     case ACTION_RIGHT:
-      do_move_left(d);
-      break;
+      return ACTION_LEFT;
     case ACTION_UP:
-      do_move_down(d);
-      break;
+      return ACTION_DOWN;
     case ACTION_DOWN:
-      do_move_up(d);
-      break;
+      return ACTION_UP;
 
     case ACTION_ROTATE:
-      do_rotate_back();
-      break;
+      return ACTION_ROTBAK;
     case ACTION_ROTBAK:
-      do_rotate();
-      break;
+      return ACTION_ROTATE;
 
     default:
-      break;
+      return 0;
     }
   }
 
