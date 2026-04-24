@@ -23,7 +23,7 @@ private:
   std::stack<std::pair<char,int>> st_undo;
   std::stack<std::pair<char,int>> st_redo;
 
-  void doAction(char type, int d){
+  void registerAction(char type, int d){
     st_undo.push({type,d});
     if (!st_redo.empty())
       st_redo = std::stack<std::pair<char,int>>();
@@ -86,21 +86,90 @@ public:
 
 
   void undo(){
+    if (st_undo.empty()) return;
     std::pair<char,int> act = st_undo.top(); st_undo.pop();
 
-    switch (act.first)
+    execCounter(act.first,act.second);
+
+    st_redo.push(act);
+  }
+
+  void redo(){
+    if (st_redo.empty()) return;
+    std::pair<char,int> act = st_redo.top(); st_redo.pop();
+
+    execAction(act.first,act.second);
+
+    st_undo.push(act);
+  }
+
+  void move_left(int d){
+    registerAction(ACTION_LEFT,d);
+    do_move_left(d);
+  }
+  void move_right(int d){
+    registerAction(ACTION_RIGHT,d);
+    do_move_right(d);
+  }
+  void move_up(int d){
+    registerAction(ACTION_UP,d);
+    do_move_up(d);
+  }
+  void move_down(int d){
+    registerAction(ACTION_DOWN,d);
+    do_move_down(d);
+  }
+
+  void rotate(){
+    registerAction(ACTION_ROTATE,0);
+    do_rotate();
+  }
+
+
+  private:
+
+  void execAction(char type, int d){
+    switch (type)
     {
     case ACTION_LEFT:
-      do_move_right(act.second);
+      do_move_left(d);
       break;
     case ACTION_RIGHT:
-      do_move_left(act.second);
+      do_move_right(d);
       break;
     case ACTION_UP:
-      do_move_down(act.second);
+      do_move_up(d);
       break;
     case ACTION_DOWN:
-      do_move_up(act.second);
+      do_move_down(d);
+      break;
+
+    case ACTION_ROTATE:
+      do_rotate();
+      break;
+    case ACTION_ROTBAK:
+      do_rotate_back();
+      break;
+
+    default:
+      break;
+    }
+  }
+
+  void execCounter(char type, int d){
+    switch (type)
+    {
+    case ACTION_LEFT:
+      do_move_right(d);
+      break;
+    case ACTION_RIGHT:
+      do_move_left(d);
+      break;
+    case ACTION_UP:
+      do_move_down(d);
+      break;
+    case ACTION_DOWN:
+      do_move_up(d);
       break;
 
     case ACTION_ROTATE:
@@ -113,34 +182,7 @@ public:
     default:
       break;
     }
-
-    st_redo.push(act);
   }
-
-  void move_left(int d){
-    doAction(ACTION_LEFT,d);
-    do_move_left(d);
-  }
-  void move_right(int d){
-    doAction(ACTION_RIGHT,d);
-    do_move_right(d);
-  }
-  void move_up(int d){
-    doAction(ACTION_UP,d);
-    do_move_up(d);
-  }
-  void move_down(int d){
-    doAction(ACTION_DOWN,d);
-    do_move_down(d);
-  }
-
-  void rotate(){
-    doAction(ACTION_ROTATE,0);
-    do_rotate();
-  }
-
-
-  private:
 
   // Función que similar desplazar la imagen, de manera circular, d pixeles a la izquierda
   void do_move_left(int d) {
