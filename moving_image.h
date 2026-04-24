@@ -131,17 +131,17 @@ public:
 
     size_t n = history.size();
 
+    clon.draw("history0.png");
+
     for (int i=0; i<n; i++)
     {
       std::pair<char,int> act = history.front(); history.pop();
 
       clon.execAction(act.first, act.second);
-      clon.draw((std::string("history")+std::to_string(i)+".png").c_str());
+      clon.draw((std::string("history")+std::to_string(i+1)+".png").c_str());
 
       history.push(act);
     }
-    
-    //clon.~moving_image();
   }
 
   void move_left(int d){
