@@ -3,6 +3,14 @@
 
 #include "basics.h"
 
+#include <stack>
+#define ACTION_LEFT 'l'
+#define ACTION_RIGHT 'r'
+#define ACTION_UP 'u'
+#define ACTION_DOWN 'd'
+#define ACTION_ROTATE 'R'
+#define ACTION_ROTBAK 'B'
+
 // Clase que representa una imagen como una colección de 3 matrices siguiendo el
 // esquema de colores RGB
 
@@ -11,6 +19,15 @@ private:
   unsigned char **red_layer; // Capa de tonalidades rojas
   unsigned char **green_layer; // Capa de tonalidades verdes
   unsigned char **blue_layer; // Capa de tonalidades azules
+
+  std::stack<std::pair<char,int>> st_undo;
+  std::stack<std::pair<char,int>> st_redo;
+
+  void doAction(char type, int d){
+    st_undo.push({type,d});
+    if (!st_redo.empty())
+      st_redo = std::stack<std::pair<char,int>>();
+  }
 
 public:
   // Constructor de la imagen. Se crea una imagen por defecto
@@ -67,8 +84,66 @@ public:
     _draw(nb);
   }
 
+
+  void undo(){
+    std::pair<char,int> act = st_undo.top(); st_undo.pop();
+
+    switch (act.first)
+    {
+    case ACTION_LEFT:
+      do_move_right(act.second);
+      break;
+    case ACTION_RIGHT:
+      do_move_left(act.second);
+      break;
+    case ACTION_UP:
+      do_move_down(act.second);
+      break;
+    case ACTION_DOWN:
+      do_move_up(act.second);
+      break;
+
+    case ACTION_ROTATE:
+      do_rotate_back();
+      break;
+    case ACTION_ROTBAK:
+      do_rotate();
+      break;
+
+    default:
+      break;
+    }
+
+    st_redo.push(act);
+  }
+
+  void move_left(int d){
+    doAction(ACTION_LEFT,d);
+    do_move_left(d);
+  }
+  void move_right(int d){
+    doAction(ACTION_RIGHT,d);
+    do_move_right(d);
+  }
+  void move_up(int d){
+    doAction(ACTION_UP,d);
+    do_move_up(d);
+  }
+  void move_down(int d){
+    doAction(ACTION_DOWN,d);
+    do_move_down(d);
+  }
+
+  void rotate(){
+    doAction(ACTION_ROTATE,0);
+    do_rotate();
+  }
+
+
+  private:
+
   // Función que similar desplazar la imagen, de manera circular, d pixeles a la izquierda
-  void move_left(int d) {
+  void do_move_left(int d) {
     unsigned char **tmp_layer = new unsigned char*[H_IMG];
     for(int i=0; i < H_IMG; i++)
       tmp_layer[i] = new unsigned char[W_IMG];
@@ -114,7 +189,7 @@ public:
     	blue_layer[i][j] = tmp_layer[i][j];
   }
 
-  void move_down(int d) {
+  void do_move_down(int d) {
     unsigned char **tmp_layer = new unsigned char*[H_IMG];
     for(int i=0; i < H_IMG; i++)
       tmp_layer[i] = new unsigned char[W_IMG];
@@ -159,7 +234,7 @@ public:
     	blue_layer[i][j] = tmp_layer[i][j];
   }
 
-    void move_up(int d) {
+  void do_move_up(int d) {
     unsigned char **tmp_layer = new unsigned char*[H_IMG];
     for(int i=0; i < H_IMG; i++)
       tmp_layer[i] = new unsigned char[W_IMG];
@@ -205,7 +280,7 @@ public:
     	blue_layer[i][j] = tmp_layer[i][j];
   }
 
-  void move_right(int d) {
+  void do_move_right(int d) {
     unsigned char **tmp_layer = new unsigned char*[H_IMG];
     for(int i=0; i < H_IMG; i++)
       tmp_layer[i] = new unsigned char[W_IMG];
@@ -249,7 +324,7 @@ public:
       for(int j=0; j < W_IMG; j++)
     	blue_layer[i][j] = tmp_layer[i][j];
   }
-  void rotate() {
+  void do_rotate() {
     unsigned char **tmp_layer = new unsigned char*[H_IMG];
     for(int i=0; i < H_IMG; i++)
       tmp_layer[i] = new unsigned char[W_IMG];
@@ -282,7 +357,7 @@ public:
     	  blue_layer[i][j] = tmp_layer[i][j];
   }
 
-  void rotate_back() {
+  void do_rotate_back() {
     unsigned char **tmp_layer = new unsigned char*[H_IMG];
     for(int i=0; i < H_IMG; i++)
       tmp_layer[i] = new unsigned char[W_IMG];
@@ -314,7 +389,9 @@ public:
       for(int j=0; j < W_IMG; j++)
     	  blue_layer[i][j] = tmp_layer[i][j];
   }
+
 private:
+
   // Función privada que guarda la imagen en formato .png
   void _draw(const char* nb) {
     //    unsigned char rgb[H_IMG * W_IMG * 3], *p = rgb;
